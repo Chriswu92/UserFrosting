@@ -37,7 +37,7 @@ const bundleConfigFile = `./${bundleFile}`;
 /**
  * Vendor asset task
  */
-gulp.task('assets-install', [ 'assets-clean' ], () => {
+gulp.task('assets-install', () => {
     "use strict";
 
     let mergePkg = require("@userfrosting/merge-package-dependencies");
@@ -52,36 +52,34 @@ gulp.task('assets-install', [ 'assets-clean' ], () => {
     if (yarnPaths.length > 0) {
         // Yes there are!
 
+        // Delete old package.json
+        del.sync("../app/assets/package.json", { force: true });
+
         // Generate package.json
-        let yarnTemplate = {// May seem overboard, but it seems the terminal clean when logging is enabled.
-            name: "uf-vendor-assets",
-            description: "Auto-generated assets dependency package for project.",
-            author: [],
-            contributors: [],
-            version: "1.0.0",
-            keywords: [],
-            repository: "https://github.com/userfrosting/UserFrosting.git",
-            flat: true,
-            bugs: "https://github.com/userfrosting/UserFrosting/issues",
-            license: "UNLICENSED",
-            homepage: "https://www.userfrosting.com/",
-            dependencies: {},
-            engines: {}
+        let yarnTemplate = {// Private makes sure it isn't published, and cuts out a lot of unnecessary fields.
+            private: true,
+            flat: true
         };
         logger("\nMerging packages...\n");
         mergePkg.yarn(yarnTemplate, yarnPaths, '../app/assets/', doILog);
         logger("\nMerge complete.\n");
 
+        // Yarn automatically removes extranous packages.
+
         // Perform installation.
         logger("Installing npm/yarn assets...");
         let execa = require("execa");
-        execa.shellSync("yarn install --flat --no-lockfile", {
+        execa.shellSync("yarn install --flat --no-lockfile --non-interactive", {
             cwd: "../app/assets",
             preferLocal: true,
             localDir: "./node_modules/.bin",
             stdio: "inherit"// MUST always log. Only way to see errors.
         });
     }
+    else del.sync([
+        "../app/assets/package.json",
+        "../app/assets/node_modules/"
+    ], { force: true });
 
     // See if there are any bower packages.
     let bowerPaths = [];
@@ -95,6 +93,9 @@ gulp.task('assets-install', [ 'assets-clean' ], () => {
     if (bowerPaths.length > 0) {
         // Yes there are!
 
+        // Delete old bower.json
+        del.sync("../app/assets/bower.json", { force: true });
+
         // Generate bower.json
         let bowerTemplate = {
             name: "uf-vendor-assets"
@@ -103,8 +104,17 @@ gulp.task('assets-install', [ 'assets-clean' ], () => {
         mergePkg.bower(bowerTemplate, bowerPaths, '../app/assets/', doILog);
         logger("\nMerge complete.\n");
 
-        // Perform installation
         let execa = require("execa");
+
+        // Remove extranous packages
+        execa.shellSync("bower prune", {
+            cwd: "../app/assets",
+            preferLocal: true,
+            localDir: "./node_modules/.bin",
+            stdio: "inherit"// MUST always log. Only way to see errors.
+        });
+
+        // Perform installation
         execa.shellSync("bower install --allow-root", {
             cwd: "../app/assets",
             preferLocal: true,
@@ -114,6 +124,10 @@ gulp.task('assets-install', [ 'assets-clean' ], () => {
         // Yarn is able to output its completion. Bower... not so much.
         logger("Done.\n");
     }
+    else del.sync([
+        "../app/assets/bower.json",
+        "../app/assets/bower_components/"
+    ], { force: true });
 });
 
 
