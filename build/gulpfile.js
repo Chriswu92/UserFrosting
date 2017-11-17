@@ -209,7 +209,7 @@ gulp.task('bundle-build', () => {
         '../app/assets/node_modules/'
     ];
     for (let path of paths) {
-        fs.copySync(path, `${publicAssetsDir}vendor/`, { overwrite: true });
+        if (fs.pathExistsSync(path)) fs.copySync(path, `${publicAssetsDir}vendor/`, { overwrite: true });
     }
     // Copy sprinkle assets
     paths = [];
