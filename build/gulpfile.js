@@ -68,12 +68,12 @@ gulp.task('assets-install', () => {
 
         // Perform installation.
         logger("Installing npm/yarn assets...");
-        let execa = require("execa");
-        execa.shellSync("yarn install --flat --no-lockfile --non-interactive", {
+        let childProcess = require("child_process");
+        childProcess.execSync("yarn install --flat --no-lockfile --non-interactive", {
             cwd: "../app/assets",
-            preferLocal: true,
+            preferLocal: true,// Local over PATH.
             localDir: "./node_modules/.bin",
-            stdio: "inherit"// MUST always log. Only way to see errors.
+            stdio: doILog ? "inherit" : ""
         });
     }
     else del.sync([
@@ -104,22 +104,22 @@ gulp.task('assets-install', () => {
         mergePkg.bower(bowerTemplate, bowerPaths, '../app/assets/', doILog);
         logger("\nMerge complete.\n");
 
-        let execa = require("execa");
+        let childProcess = require("child_process");
 
         // Remove extranous packages
-        execa.shellSync("bower prune", {
+        childProcess.execSync("bower prune", {
             cwd: "../app/assets",
-            preferLocal: true,
+            preferLocal: true,// Local over PATH.
             localDir: "./node_modules/.bin",
-            stdio: "inherit"// MUST always log. Only way to see errors.
+            stdio: doILog ? "inherit" : ""
         });
 
         // Perform installation
-        execa.shellSync("bower install --allow-root", {
+        childProcess.execSync("bower install -q --allow-root", { // --allow-root stops bower from complaining about being in 'sudo'.
             cwd: "../app/assets",
-            preferLocal: true,
+            preferLocal: true,// Local over PATH.
             localDir: "./node_modules/.bin",
-            stdio: "inherit"// MUST always log. Only way to see errors.
+            stdio: doILog ? "inherit" : ""
         });
         // Yarn is able to output its completion. Bower... not so much.
         logger("Done.\n");
